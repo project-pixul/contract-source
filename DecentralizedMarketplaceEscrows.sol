@@ -33,7 +33,7 @@ contract Roles is Context {
 
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    
+
 
     constructor () {
         address msgSender = _msgSender();
@@ -43,7 +43,7 @@ contract Roles is Context {
 
     function mediator() public view returns (address) {
         return _mediator;
-    }     
+    }
     modifier onlyMediator() { //modifier to make functions only accessible to management
         require(_mediator == _msgSender(), "Ownable: caller is not the owner");
         _;
@@ -72,38 +72,38 @@ contract Roles is Context {
     function setPayer(address payable _Payer) external onlyMediator{
         _payer = _Payer;
     }
-  
+
 
     function transferOwnership(address newOwner) public virtual onlyMediator {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
         emit OwnershipTransferred(_mediator, newOwner);
         _mediator = newOwner;
     }
-    
+
     function getUnlockTime() public view returns (uint256) {
         return _lockTime;
     }
-    
+
     function getTime() public view returns (uint256) {
         return block.timestamp;
     }
-    
+
 }
 
 
-contract TheCollectiveEscrow is Context, Roles{
+contract PixulEscrow is Context, Roles{
 
-    string private _name = "CollectiveEscrow";
-    string private _symbol = "TCCESCROW";
+    string private _name = "PixulEscrow";
+    string private _symbol = "PIXULESCROW";
     uint256 private feePercentage = 10;
     bool private JobDone = false;
-    address payable public feesAddress = payable(0xDd711BBad691c4b18fF00b9ac966732fD70dC707);
+    address payable public feesAddress = payable(0xEcd32F43386b7D1EF56766a1240ACbA0e8595F47);
     event freelancerPayment(address payable payee, uint256 amount);
     event refundedEscrow(uint256 amount);
-    
+
     constructor () {
-        
-       
+
+
 
     }
     function name() public view returns (string memory) {
@@ -117,7 +117,7 @@ contract TheCollectiveEscrow is Context, Roles{
     function symbol() public view returns (string memory) {
         return _symbol;
     }
-    
+
     function balanceSC () public view returns(uint256){
         return address(this).balance;
     }
@@ -136,7 +136,7 @@ contract TheCollectiveEscrow is Context, Roles{
             _payee.transfer(PayableBalance);
             feesAddress.transfer(currentBalance/feePercentage);
             emit freelancerPayment(_payee, PayableBalance);
-        }                             
+        }
 
     }
 
@@ -151,7 +151,7 @@ contract TheCollectiveEscrow is Context, Roles{
             feesAddress.transfer(currentBalance/feePercentage);
         }
     }
-    function refundEscrow() external onlyPayee{ //Allows Freelancer to refund customer in full at low gas cost. 
+    function refundEscrow() external onlyPayee{ //Allows Freelancer to refund customer in full at low gas cost.
         require(address(this).balance > 0,"Internal escrow balance: Nothing to refund escrow is empty");
         payable(_payer).transfer(address(this).balance);
         emit refundedEscrow(address(this).balance);
@@ -170,12 +170,12 @@ contract TheCollectiveEscrow is Context, Roles{
     function finalize() external onlyMediator {
         require(JobDone == true,"Contract cant be destroyed, job not completed");
         selfdestruct(feesAddress);
-        
-    }   
+
+    }
 
     function updateFeeAddress(address payable newAddress) external onlyMediator{
-            feesAddress = newAddress;
+        feesAddress = newAddress;
     }
-     //to receive bnb
+    //to receive bnb
     receive() external payable {}
 }

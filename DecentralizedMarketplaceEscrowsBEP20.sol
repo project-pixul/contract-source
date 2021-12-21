@@ -110,17 +110,17 @@ contract Roles is Context {
 
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    
+
 
     constructor () {
         address msgSender = _msgSender();
-        _mediator = 0xb8D23FcF7a399898aE9D7a070025CBc774a39b4C;
+        _mediator = 0x0a6E7995826B10eC75CAa3f3084D1A60412afC8E;
         emit OwnershipTransferred(address(0), msgSender);
     }
 
     function mediator() public view returns (address) {
         return _mediator;
-    }     
+    }
     modifier onlyMediator() { //modifier to make functions only accessible to management
         require(_mediator == _msgSender(), "Ownable: caller is not the owner");
         _;
@@ -149,33 +149,33 @@ contract Roles is Context {
     function setPayer(address payable _Payer) external onlyMediator{
         _payer = _Payer;
     }
-  
+
 
     function transferOwnership(address newOwner) public virtual onlyMediator {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
         emit OwnershipTransferred(_mediator, newOwner);
         _mediator = newOwner;
     }
-    
+
     function getUnlockTime() public view returns (uint256) {
         return _lockTime;
     }
-    
+
     function getTime() public view returns (uint256) {
         return block.timestamp;
     }
-    
+
 }
 
 
-contract TheCollectiveEscrow is Context, Roles{
+contract PixulEscrow is Context, Roles{
 
-    string private _name = "CollectiveEscrow";
-    string private _symbol = "TCCESCROW";
+    string private _name = "PixulEscrow";
+    string private _symbol = "PIXULESCROW";
     uint256 private feePercentage = 90;
     address public immutable stableAsset = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56; //BUSD
     bool private JobDone = false;
-    address payable public feesAddress = payable(0xDd711BBad691c4b18fF00b9ac966732fD70dC707);
+    address payable public feesAddress = payable(0xEcd32F43386b7D1EF56766a1240ACbA0e8595F47);
     event freelancerPayment(address payable payee, uint256 amount);
     event refundedEscrow(uint256 amount);
     mapping (address => mapping (address => uint256)) private _allowances;
@@ -185,8 +185,8 @@ contract TheCollectiveEscrow is Context, Roles{
     IPancakeRouter02 public immutable pancakeRouter;
     address public swappableToken;
     // mainnet: 0x10ED43C718714eb63d5aA57B78B54704E256024E
-	// testnet: 0xD99D1c33F9fC3444f8101754aBC46c52416550D1
-    
+    // testnet: 0xD99D1c33F9fC3444f8101754aBC46c52416550D1
+
     constructor (address payable payer,address payable payee, IERC20 _paymentToken) {
         IPancakeRouter02 _pancakeRouter = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
         pancakeRouter = _pancakeRouter;
@@ -206,12 +206,12 @@ contract TheCollectiveEscrow is Context, Roles{
         return paymentTokenAddress;
     }
 
-    
+
 
     function symbol() public view returns (string memory) {
         return _symbol;
     }
-    
+
     function balanceSC () public view returns(uint256){
         return address(this).balance;
     }
@@ -227,18 +227,18 @@ contract TheCollectiveEscrow is Context, Roles{
         balances[address(this)] = paymentTokenAddress.balanceOf(address(this));
 
     }
-    
+
     function updateJobstatus()external onlyPayer{
         require(address(this).balance > 0 && JobDone == false, "Escrow funds:funds hasnt been escrowed, Job Status: Job has been completed or hasnt started because of funds not being present");
         JobDone = true;
         if(JobDone){
-                uint256 currentBalance = address(this).balance;
-                uint256 PayableBalance = currentBalance * feePercentage / hundred;
-                _payee.transfer(PayableBalance);
-                uint256 feebalance = address(this).balance;
-                feesAddress.transfer(feebalance);
-                
-        }                             
+            uint256 currentBalance = address(this).balance;
+            uint256 PayableBalance = currentBalance * feePercentage / hundred;
+            _payee.transfer(PayableBalance);
+            uint256 feebalance = address(this).balance;
+            feesAddress.transfer(feebalance);
+
+        }
 
     }
 
@@ -247,15 +247,15 @@ contract TheCollectiveEscrow is Context, Roles{
         //require(JobDone == false,"Job status:Job completed, funds sent");
         JobDone = true;
         if(JobDone){
-                uint256 currentBalance = address(this).balance;
-                uint256 PayableBalance = currentBalance * feePercentage / hundred;
-                _payee.transfer(PayableBalance);
-                uint256 feebalance = address(this).balance;
-                feesAddress.transfer(feebalance);
-                
+            uint256 currentBalance = address(this).balance;
+            uint256 PayableBalance = currentBalance * feePercentage / hundred;
+            _payee.transfer(PayableBalance);
+            uint256 feebalance = address(this).balance;
+            feesAddress.transfer(feebalance);
+
         }
     }
-    function refundEscrow() external onlyPayee{ //Allows Freelancer to refund customer in full at low gas cost. 
+    function refundEscrow() external onlyPayee{ //Allows Freelancer to refund customer in full at low gas cost.
         require(address(this).balance > 0,"Internal escrow balance: Nothing to refund escrow is empty");
         payable(_payer).transfer(address(this).balance);
         emit refundedEscrow(address(this).balance);
@@ -274,57 +274,57 @@ contract TheCollectiveEscrow is Context, Roles{
     function finalize() external onlyMediator {
         require(JobDone == true,"Contract cant be destroyed, job not completed");
         selfdestruct(feesAddress);
-        
-    }   
+
+    }
 
     function updateFeeAddress(address payable newAddress) external onlyMediator{
-            feesAddress = newAddress;
-            
+        feesAddress = newAddress;
+
     }
-   
+
 
     //ERC20 TOKENS
     function confirmReceivedERC20() public onlyPayer{ //Same as updateJobStatus but with ERC20/BEP20 tokens
-          require(JobDone == false,"Job status:Job completed, funds sent");
-            JobDone = true;
-            if(JobDone){
-                uint256 currentBalance = paymentTokenAddress.balanceOf(address(this));
-                uint256 PayableBalance = currentBalance * feePercentage / hundred;
-                paymentTokenAddress.transfer(_payee, PayableBalance);
-                uint256 feebalance = paymentTokenAddress.balanceOf(address(this));
-                //swapTokensForBNB(swappableToken,feebalance);
-                paymentTokenAddress.transfer(feesAddress, feebalance);
-                //emit freelancerPayment(_payee, PayableBalance);
-                
+        require(JobDone == false,"Job status:Job completed, funds sent");
+        JobDone = true;
+        if(JobDone){
+            uint256 currentBalance = paymentTokenAddress.balanceOf(address(this));
+            uint256 PayableBalance = currentBalance * feePercentage / hundred;
+            paymentTokenAddress.transfer(_payee, PayableBalance);
+            uint256 feebalance = paymentTokenAddress.balanceOf(address(this));
+            //swapTokensForBNB(swappableToken,feebalance);
+            paymentTokenAddress.transfer(feesAddress, feebalance);
+            //emit freelancerPayment(_payee, PayableBalance);
 
-                
-            }
+
+
+        }
     }
     function swapTokensForBNB(address SwappableToken, uint256 tokenAmount) private{ //called after finishing job to swap tokens in fee and get bnb back to the marketplace
-		address[] memory path = new address[](2);
-		path[0] = SwappableToken;
-		path[1] = pancakeRouter.WETH();
+        address[] memory path = new address[](2);
+        path[0] = SwappableToken;
+        path[1] = pancakeRouter.WETH();
 
-		try pancakeRouter.swapExactTokensForETH(
+        try pancakeRouter.swapExactTokensForETH(
             tokenAmount,
-			0, // Accept any amount of BNB.
-			path,
-			address(this),
-			block.timestamp
+            0, // Accept any amount of BNB.
+            path,
+            address(this),
+            block.timestamp
         )
         {}catch{revert();}
-	}
-    
-     //to receive bnb
+    }
+
+    //to receive bnb
     receive() external payable {}
 
 
-     function refundEscrowBEP20() external onlyPayee{ //Allows Freelancer to refund customer in full at low gas cost. 
-       uint256 currentBalanceEscrowed = paymentTokenAddress.balanceOf(address(this));
+    function refundEscrowBEP20() external onlyPayee{ //Allows Freelancer to refund customer in full at low gas cost.
+        uint256 currentBalanceEscrowed = paymentTokenAddress.balanceOf(address(this));
         require(paymentTokenAddress.balanceOf(address(this)) > 0,"Internal escrow balance: Nothing to refund escrow is empty");
         paymentTokenAddress.transfer(_payer, currentBalanceEscrowed);
         emit refundedEscrow(address(this).balance);
-        
+
 
 
     }
@@ -334,13 +334,13 @@ contract TheCollectiveEscrow is Context, Roles{
         require(paymentTokenAddress.balanceOf(address(this)) > 0,"Internal escrow balance: Nothing to refund escrow is empty");
         paymentTokenAddress.transfer(_payer, currentBalanceEscrowed);
         emit refundedEscrow(address(this).balance);
-        
+
 
     }
 
     function checkbalalt() public view returns(uint256) {
         return paymentTokenAddress.balanceOf(address(this));
-        
+
     }
 
     function withdrawBNB () public onlyMediator{
@@ -352,136 +352,136 @@ contract TheCollectiveEscrow is Context, Roles{
 
 //Pancake stuff for swapping
 interface IPancakeRouter01 {
-		function factory() external pure returns (address);
-		function WETH() external pure returns (address);
+    function factory() external pure returns (address);
+    function WETH() external pure returns (address);
 
-		function addLiquidity(
-				address tokenA,
-				address tokenB,
-				uint amountADesired,
-				uint amountBDesired,
-				uint amountAMin,
-				uint amountBMin,
-				address to,
-				uint deadline
-		) external returns (uint amountA, uint amountB, uint liquidity);
-		function addLiquidityETH(
-				address token,
-				uint amountTokenDesired,
-				uint amountTokenMin,
-				uint amountETHMin,
-				address to,
-				uint deadline
-		) external payable returns (uint amountToken, uint amountETH, uint liquidity);
-		function removeLiquidity(
-				address tokenA,
-				address tokenB,
-				uint liquidity,
-				uint amountAMin,
-				uint amountBMin,
-				address to,
-				uint deadline
-		) external returns (uint amountA, uint amountB);
-		function removeLiquidityETH(
-				address token,
-				uint liquidity,
-				uint amountTokenMin,
-				uint amountETHMin,
-				address to,
-				uint deadline
-		) external returns (uint amountToken, uint amountETH);
-		function removeLiquidityWithPermit(
-				address tokenA,
-				address tokenB,
-				uint liquidity,
-				uint amountAMin,
-				uint amountBMin,
-				address to,
-				uint deadline,
-				bool approveMax, uint8 v, bytes32 r, bytes32 s
-		) external returns (uint amountA, uint amountB);
-		function removeLiquidityETHWithPermit(
-				address token,
-				uint liquidity,
-				uint amountTokenMin,
-				uint amountETHMin,
-				address to,
-				uint deadline,
-				bool approveMax, uint8 v, bytes32 r, bytes32 s
-		) external returns (uint amountToken, uint amountETH);
-		function swapExactTokensForTokens(
-				uint amountIn,
-				uint amountOutMin,
-				address[] calldata path,
-				address to,
-				uint deadline
-		) external returns (uint[] memory amounts);
-		function swapTokensForExactTokens(
-				uint amountOut,
-				uint amountInMax,
-				address[] calldata path,
-				address to,
-				uint deadline
-		) external returns (uint[] memory amounts);
-		function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
-		external
-		payable
-		returns (uint[] memory amounts);
-		function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
-		external
-		returns (uint[] memory amounts);
-		function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
-		external
-		returns (uint[] memory amounts);
-		function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
-		external
-		payable
-		returns (uint[] memory amounts);
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint amountADesired,
+        uint amountBDesired,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB, uint liquidity);
+    function addLiquidityETH(
+        address token,
+        uint amountTokenDesired,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH);
+    function removeLiquidityWithPermit(
+        address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amountA, uint amountB);
+    function removeLiquidityETHWithPermit(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amountToken, uint amountETH);
+    function swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+    function swapTokensForExactTokens(
+        uint amountOut,
+        uint amountInMax,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+    external
+    payable
+    returns (uint[] memory amounts);
+    function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+    external
+    returns (uint[] memory amounts);
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    external
+    returns (uint[] memory amounts);
+    function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
+    external
+    payable
+    returns (uint[] memory amounts);
 
-		function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
-		function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external pure returns (uint amountOut);
-		function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external pure returns (uint amountIn);
-		function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
-		function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
+    function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
+    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external pure returns (uint amountOut);
+    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external pure returns (uint amountIn);
+    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
+    function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
 interface IPancakeRouter02 is IPancakeRouter01 {  //The functions calling for ETH actually call for BNB so i could technically change the "ETH" for BNB.
-		function removeLiquidityETHSupportingFeeOnTransferTokens(
-				address token,
-				uint liquidity,
-				uint amountTokenMin,
-				uint amountETHMin,
-				address to,
-				uint deadline
-		) external returns (uint amountETH);
-		function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
-				address token,
-				uint liquidity,
-				uint amountTokenMin,
-				uint amountETHMin,
-				address to,
-				uint deadline,
-				bool approveMax, uint8 v, bytes32 r, bytes32 s
-		) external returns (uint amountETH);
+    function removeLiquidityETHSupportingFeeOnTransferTokens(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountETH);
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amountETH);
 
-		function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-				uint amountIn,
-				uint amountOutMin,
-				address[] calldata path,
-				address to,
-				uint deadline
-		) external;
-		function swapExactETHForTokensSupportingFeeOnTransferTokens(
-				uint amountOutMin,
-				address[] calldata path,
-				address to,
-				uint deadline
-		) external payable;
-		function swapExactTokensForETHSupportingFeeOnTransferTokens(
-				uint amountIn,
-				uint amountOutMin,
-				address[] calldata path,
-				address to,
-				uint deadline
-		) external;
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external;
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external payable;
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external;
 }
